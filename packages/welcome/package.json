@@ -33,10 +33,10 @@
     }
   },
   "deserializers": {
-    "WelcomeView": "createWelcomeView",
-    "GuideView": "createGuideView",
+    "WelcomeView": "deserializeWelcomeView",
+    "GuideView": "deserializeGuideView",
     "ConsentView": "createConsentView",
-    "SunsettingView": "createSunsettingView"
+    "SunsettingView": "deserializeSunsettingView"
   },
   "dependencies": {
     "etch": "0.9.0"

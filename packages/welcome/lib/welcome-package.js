@@ -71,15 +71,20 @@ export default class WelcomePackage {
     }
   }
 
+  // searchAllPanes reuses a pane restored from the previous session instead
+  // of opening a duplicate next to it.
   showWelcome() {
     return Promise.all([
-      atom.workspace.open(WELCOME_URI, { split: 'left' }),
-      atom.workspace.open(GUIDE_URI, { split: 'right' })
+      atom.workspace.open(WELCOME_URI, { split: 'left', searchAllPanes: true }),
+      atom.workspace.open(GUIDE_URI, { split: 'right', searchAllPanes: true })
     ]);
   }
 
   showSunsetting() {
-    return atom.workspace.open(SUNSETTING_URI, { split: 'left' });
+    return atom.workspace.open(SUNSETTING_URI, {
+      split: 'left',
+      searchAllPanes: true
+    });
   }
 
   consumeReporter(reporter) {
@@ -88,6 +93,24 @@ export default class WelcomePackage {
 
   deactivate() {
     this.subscriptions.dispose();
+  }
+
+  // Deserializers for panes restored from the previous session. Once the user
+  // has turned off a pane's "show on startup" checkbox, returning nothing
+  // drops it instead of bringing it back on every launch.
+  deserializeSunsettingView(state) {
+    if (!atom.config.get('welcome.showSunsettingOnStartup')) return null;
+    return this.createSunsettingView(state);
+  }
+
+  deserializeWelcomeView(state) {
+    if (!atom.config.get('welcome.showOnStartup')) return null;
+    return this.createWelcomeView(state);
+  }
+
+  deserializeGuideView(state) {
+    if (!atom.config.get('welcome.showOnStartup')) return null;
+    return this.createGuideView(state);
   }
 
   createSunsettingView(state) {
