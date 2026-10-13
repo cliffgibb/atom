@@ -65,6 +65,72 @@ describe('Welcome', () => {
       });
     });
 
+    describe('when the welcome panes are already open', () => {
+      it('reuses them instead of opening duplicates', async () => {
+        // A restored session can leave the guide in a pane that is no longer
+        // the rightmost one.
+        atom.workspace
+          .getCenter()
+          .getPanes()[1]
+          .splitRight();
+
+        await welcomePackage.showWelcome();
+
+        const titles = atom.workspace
+          .getCenter()
+          .getPaneItems()
+          .map(item => item.getTitle());
+        assert.equal(titles.filter(title => title === 'Welcome').length, 1);
+        assert.equal(
+          titles.filter(title => title === 'Welcome Guide').length,
+          1
+        );
+      });
+    });
+
+    describe('restoring panes from a previous session', () => {
+      it('restores the welcome panes while showOnStartup is enabled', () => {
+        assert(
+          welcomePackage.deserializeWelcomeView({
+            uri: 'atom://welcome/welcome'
+          })
+        );
+        assert(
+          welcomePackage.deserializeGuideView({ uri: 'atom://welcome/guide' })
+        );
+      });
+
+      it('drops the welcome panes once showOnStartup is disabled', () => {
+        atom.config.set('welcome.showOnStartup', false);
+        assert.equal(
+          welcomePackage.deserializeWelcomeView({
+            uri: 'atom://welcome/welcome'
+          }),
+          null
+        );
+        assert.equal(
+          welcomePackage.deserializeGuideView({ uri: 'atom://welcome/guide' }),
+          null
+        );
+      });
+
+      it('drops the sunsetting pane once showSunsettingOnStartup is disabled', () => {
+        atom.config.set('welcome.showSunsettingOnStartup', true);
+        assert(
+          welcomePackage.deserializeSunsettingView({
+            uri: 'atom://welcome/sunsetting'
+          })
+        );
+        atom.config.set('welcome.showSunsettingOnStartup', false);
+        assert.equal(
+          welcomePackage.deserializeSunsettingView({
+            uri: 'atom://welcome/sunsetting'
+          }),
+          null
+        );
+      });
+    });
+
     describe('deserializing the pane items', () => {
       describe('when GuideView is deserialized', () => {
         it('remembers open sections', () => {
