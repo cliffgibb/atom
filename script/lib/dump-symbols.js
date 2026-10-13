@@ -12,6 +12,13 @@ module.exports = function() {
         .gray
     );
     return Promise.resolve();
+  } else if (!hasDumpSymsBinary()) {
+    console.log(
+      `Skipping symbol dumping because minidump has no dump_syms for ${
+        process.platform
+      }-${process.arch}`.gray
+    );
+    return Promise.resolve();
   } else {
     console.log(`Dumping symbols in ${CONFIG.symbolsPath}`);
     const binaryPaths = glob.sync(
@@ -20,6 +27,18 @@ module.exports = function() {
     return Promise.all(binaryPaths.map(dumpSymbol));
   }
 };
+
+function hasDumpSymsBinary() {
+  const minidumpPath = path.dirname(require.resolve('minidump/package.json'));
+  return fs.existsSync(
+    path.join(
+      minidumpPath,
+      'bin',
+      `${process.platform}-${process.arch}`,
+      'dump_syms'
+    )
+  );
+}
 
 function dumpSymbol(binaryPath) {
   const minidump = require('minidump');

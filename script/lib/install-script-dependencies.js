@@ -11,7 +11,8 @@ module.exports = function(ci) {
   console.log('Installing script dependencies');
   childProcess.execFileSync(
     CONFIG.getNpmBinPath(ci),
-    ['--loglevel=error', ci ? 'ci' : 'install'],
+    // --no-save keeps npm 7+ from rewriting the v1 package-lock.json.
+    ['--loglevel=error', ci ? 'ci' : 'install', '--no-save'],
     { env: process.env, cwd: CONFIG.scriptRootPath }
   );
 };

@@ -1,0 +1,3 @@
+#!/bin/sh
+# node-gyp 5 / gyp-mac-tool invoke `python`, which macOS no longer provides.
+exec python3 "$@"

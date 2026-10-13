@@ -14,6 +14,15 @@ function verifyNode() {
   const minorVersion = fullVersion.split('.')[1];
   if (majorVersion >= 11 || (majorVersion === '10' && minorVersion >= 12)) {
     console.log(`Node:\tv${fullVersion}`);
+    if (majorVersion > 16) {
+      // The pinned nan/node-gyp versions in script/ and apm/ don't compile
+      // against newer V8 headers (e.g. Node 23 fails on fs-admin).
+      console.warn(
+        `Warning: Node v${fullVersion} is newer than this build supports; ` +
+          'native modules will likely fail to compile. Use Node 16 ' +
+          '(the first release with native Apple Silicon builds).'
+      );
+    }
   } else {
     throw new Error(
       `node v10.12+ is required to build Atom. node v${fullVersion} is installed.`
