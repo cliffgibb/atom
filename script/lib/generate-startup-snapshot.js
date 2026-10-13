@@ -300,18 +300,27 @@ module.exports = function(packagedAppPath) {
     );
 
     console.log('Generating startup blob with mksnapshot');
-    childProcess.spawnSync(process.execPath, [
-      path.join(
-        CONFIG.repositoryRootPath,
-        'script',
-        'node_modules',
-        'electron-mksnapshot',
-        'mksnapshot.js'
-      ),
-      snapshotScriptPath,
-      '--output_dir',
-      CONFIG.buildOutputPath
-    ]);
+    const mksnapshotResult = childProcess.spawnSync(
+      process.execPath,
+      [
+        path.join(
+          CONFIG.repositoryRootPath,
+          'script',
+          'node_modules',
+          'electron-mksnapshot',
+          'mksnapshot.js'
+        ),
+        snapshotScriptPath,
+        '--output_dir',
+        CONFIG.buildOutputPath
+      ],
+      { stdio: 'inherit' }
+    );
+    if (mksnapshotResult.status !== 0) {
+      throw new Error(
+        `mksnapshot failed with exit code ${mksnapshotResult.status}`
+      );
+    }
 
     let startupBlobDestinationPath;
     if (process.platform === 'darwin') {
@@ -320,22 +329,19 @@ module.exports = function(packagedAppPath) {
       startupBlobDestinationPath = packagedAppPath;
     }
 
-    const snapshotBinaries = ['v8_context_snapshot.bin', 'snapshot_blob.bin'];
+    // On macOS, Electron and mksnapshot name the context snapshot per arch.
+    let v8ContextSnapshot = 'v8_context_snapshot.bin';
+    if (process.platform === 'darwin') {
+      const snapshotArch = process.arch === 'arm64' ? 'arm64' : 'x86_64';
+      v8ContextSnapshot = `v8_context_snapshot.${snapshotArch}.bin`;
+    }
+
+    const snapshotBinaries = [v8ContextSnapshot, 'snapshot_blob.bin'];
     for (let snapshotBinary of snapshotBinaries) {
-      let destinationPath = path.join(
+      const destinationPath = path.join(
         startupBlobDestinationPath,
         snapshotBinary
       );
-      if (
-        process.platform === 'darwin' &&
-        snapshotBinary === 'v8_context_snapshot.bin'
-      ) {
-        // TODO: check if we're building for arm64 and use the arm64 version of the binary
-        destinationPath = path.join(
-          startupBlobDestinationPath,
-          'v8_context_snapshot.x86_64.bin'
-        );
-      }
       console.log(`Moving generated startup blob into "${destinationPath}"`);
       try {
         fs.unlinkSync(destinationPath);

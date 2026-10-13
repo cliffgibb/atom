@@ -14,6 +14,10 @@ All tooling lives in `script/` (it has its own `package.json` / `node_modules`; 
 - `script/clean` — wipe build outputs and caches.
 - `script/test` — runs specs **against the built app in `out/`** (run `script/build` first). Flags: `--core-main`, `--core-renderer`, `--package`, `--core-benchmark`, `--skip-main`. Limit bundled-package specs with `ATOM_PACKAGES_TO_TEST=pkg1,pkg2`.
 
+### Building on Apple Silicon
+
+Builds natively for arm64 when run with an arm64 Node. Use **Node 16** (`node -p process.arch` must print `arm64`): newer Node breaks the pinned `nan`/node-gyp 5 toolchain, and Node 12/14 have no arm64 build. Mac-specific workarounds live in `script/lib/darwin-build-env.js` (compiler flags, `python` shim, `script/darwin-compat/include/iconv.h`), `script/lib/install-apm.js` (post-install patches to apm and its node-gyp so native modules target the host arch) and `script/lib/build-ctags-for-arm64.js`. Snapshot generation still runs Electron 11's x64 `mksnapshot` under Rosetta at build time only; the shipped app is native. The renderer specs `atom-environment-spec.js` and `config-spec.js` have 8 failures that predate the port (underscore 1.13's `debounce` ignores the `_.now` spy in `spec/spec-helper.coffee`).
+
 ### Running a single test
 
 Specs run inside Atom itself, not plain Node. Use the built binary (or an installed `atom` pointed at this checkout):

@@ -41,7 +41,9 @@ module.exports = function() {
 
       // Run `apm install` in the *root* package's path, so we get devDeps w/o apm's weird caching
       // Then copy this folder into the intermediate package's path so we can run the transpilation in-line.
-      runApmInstall(rootPackagePath);
+      withoutArmIncompatibleDevDeps(rootPackagePath, () =>
+        runApmInstall(rootPackagePath)
+      );
       if (fs.existsSync(intermediatePackageBackup.nodeModulesPath)) {
         fs.removeSync(intermediatePackageBackup.nodeModulesPath);
       }
@@ -79,6 +81,35 @@ module.exports = function() {
     }
   }
 };
+
+// Dev dependencies whose install scripts refuse to run on ARM hosts. They are
+// only used by the packages' own test suites, never for transpilation.
+const ARM_INCOMPATIBLE_DEV_DEPS = ['electron-mksnapshot'];
+
+function withoutArmIncompatibleDevDeps(packagePath, callback) {
+  const metadataPath = path.join(packagePath, 'package.json');
+  const lockPath = path.join(packagePath, 'package-lock.json');
+  const metadata = fs.readJsonSync(metadataPath);
+  const devDeps = metadata.devDependencies || {};
+  const skipped = ARM_INCOMPATIBLE_DEV_DEPS.filter(name => devDeps[name]);
+  if (!process.arch.startsWith('arm') || skipped.length === 0) {
+    return callback();
+  }
+
+  const originalMetadata = fs.readFileSync(metadataPath);
+  const originalLock = fs.existsSync(lockPath) && fs.readFileSync(lockPath);
+  console.log(
+    `  skipping ${skipped.join(', ')} (not installable on ${process.arch})`
+  );
+  for (const name of skipped) delete devDeps[name];
+  fs.writeJsonSync(metadataPath, metadata, { spaces: 2 });
+  try {
+    return callback();
+  } finally {
+    fs.writeFileSync(metadataPath, originalMetadata);
+    if (originalLock) fs.writeFileSync(lockPath, originalLock);
+  }
+}
 
 function transpilePath(path) {
   fs.writeFileSync(
