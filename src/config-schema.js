@@ -526,7 +526,7 @@ const configSchema = {
       },
       softWrap: {
         type: 'boolean',
-        default: false,
+        default: true,
         description:
           'Wraps lines that exceed the width of the window. When `Soft Wrap At Preferred Line Length` is set, it will wrap to the number of characters defined by the `Preferred Line Length` setting.'
       },
